@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusBoost</title>
+    <style>
+        body {
+            width: 350px;
+            min-height: 400px;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            margin: 0 0 5px 0;
+            font-size: 1.5rem;
+        }
+
+        .header p {
+            margin: 0;
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.paused {
+            background: #f44336;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        .controls {
+            padding: 0 20px 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .stats {
+            padding: 0 20px 20px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-weight: 600;
+        }
+
+        .current-tab {
+            padding: 15px 20px;
+            background: rgba(255,255,255,0.1);
+            margin: 0 20px 20px;
+            border-radius: 10px;
+        }
+
+        .current-tab h3 {
+            margin: 0 0 8px 0;
+            font-size: 1rem;
+        }
+
+        .current-tab p {
+            margin: 0;
+            font-size: 0.85rem;
+            opacity: 0.9;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .dashboard-link {
+            text-align: center;
+            padding: 0 20px 20px;
+        }
+
+        .dashboard-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .dashboard-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px 20px;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 FocusBoost</h1>
+        <p>Tab Tracking Extension</p>
+    </div>
+
+    <div id="loading" class="loading">
+        Loading...
+    </div>
+
+    <div id="content" style="display: none;">
+        <div class="status">
+            <div id="statusDot" class="status-dot"></div>
+            <span id="statusText">Actively Tracking</span>
+            <span id="sessionTime">00:00:00</span>
+        </div>
+
+        <div class="current-tab" id="currentTab">
+            <h3>Currently Viewing</h3>
+            <p id="currentTabInfo">FocusBoost Dashboard</p>
+        </div>
+
+        <div class="controls">
+            <button id="startBtn" class="btn">Start</button>
+            <button id="pauseBtn" class="btn">Pause</button>
+            <button id="resetBtn" class="btn">Reset</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-row">
+                <span class="stat-label">Productive Time</span>
+                <span id="productiveTime" class="stat-value">0m</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Entertainment Time</span>
+                <span id="entertainmentTime" class="stat-value">0m</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Productivity Score</span>
+                <span id="productivityScore" class="stat-value">0%</span>
+            </div>
+            <div class="stat-row">
+                <span class="stat-label">Total Tabs Tracked</span>
+                <span id="totalTabs" class="stat-value">0</span>
+            </div>
+        </div>
+
+        <div class="dashboard-link">
+            <a href="#" id="openDashboard" class="dashboard-btn">
+                📊 Open Full Dashboard
+            </a>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
