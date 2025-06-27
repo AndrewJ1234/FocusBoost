@@ -1,42 +1,72 @@
-// Content script to communicate with dashboard
-(function() {
-  'use strict';
+console.log("🌐 Content script loading on:", window.location.href);
 
-  // Only run on FocusBoost dashboard
-  if (!window.location.href.includes('localhost') || !window.location.href.includes('5173')) {
-    return;
-  }
+if (window.location.href.includes("localhost")) {
+  console.log("✅ On localhost - initializing...");
 
-  // Listen for messages from background script
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'FOCUSBOOST_UPDATE') {
-      // Forward to dashboard
-      window.postMessage({
-        type: 'FOCUSBOOST_EXTENSION_DATA',
-        payload: message.payload
-      }, '*');
-    }
-  });
-
-  // Listen for requests from dashboard
-  window.addEventListener('message', (event) => {
+  window.addEventListener("message", (event) => {
     if (event.source !== window) return;
-    
-    if (event.data.type === 'FOCUSBOOST_REQUEST') {
-      const { action, payload } = event.data;
-      
-      chrome.runtime.sendMessage({ action, ...payload }, (response) => {
-        window.postMessage({
-          type: 'FOCUSBOOST_RESPONSE',
-          action,
-          payload: response
-        }, '*');
-      });
+
+    if (event.data.type === "FOCUSBOOST_REQUEST") {
+      console.log("📨 Content script received from dashboard:", event.data);
+      console.log("🔄 Forwarding to background script...");
+
+      try {
+        chrome.runtime.sendMessage(event.data, (response) => {
+          console.log("📨 Content script received from background:", response);
+
+          if (chrome.runtime.lastError) {
+            console.error(
+              "❌ Runtime error:",
+              chrome.runtime.lastError.message
+            );
+            // Send error back to dashboard
+            window.postMessage(
+              {
+                type: "FOCUSBOOST_RESPONSE",
+                action: event.data.action,
+                payload: { error: chrome.runtime.lastError.message },
+              },
+              "*"
+            );
+          } else {
+            console.log("✅ Forwarding response back to dashboard");
+            // Send response back to dashboard
+            window.postMessage(
+              {
+                type: "FOCUSBOOST_RESPONSE",
+                action: event.data.action,
+                payload: response,
+              },
+              "*"
+            );
+          }
+        });
+      } catch (error) {
+        console.error("❌ Error forwarding to background:", error);
+        window.postMessage(
+          {
+            type: "FOCUSBOOST_RESPONSE",
+            action: event.data.action,
+            payload: { error: error.message },
+          },
+          "*"
+        );
+      }
     }
   });
 
-  // Notify dashboard that extension is available
-  window.postMessage({
-    type: 'FOCUSBOOST_EXTENSION_READY'
-  }, '*');
-})();
+  // Notify dashboard when ready
+  setTimeout(() => {
+    console.log("📢 Notifying dashboard extension is ready");
+    window.postMessage(
+      {
+        type: "FOCUSBOOST_EXTENSION_READY",
+      },
+      "*"
+    );
+  }, 1000);
+
+  console.log("✅ Content script bridge ready");
+} else {
+  console.log("❌ Not on localhost, content script not active");
+}

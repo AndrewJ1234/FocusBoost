@@ -1,40 +1,39 @@
 {
   "manifest_version": 3,
-  "name": "FocusBoost - Real-Time Tab Tracker",
-  "version": "1.0.0",
-  "description": "Track your browsing habits and productivity in real-time",
+  "name": "FocusBoost - Debug Version",
+  "version": "1.0.1",
+  "description": "Debug version for troubleshooting",
   "permissions": [
     "tabs",
     "activeTab",
-    "storage",
-    "background",
-    "scripting"
+    "storage"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "http://localhost/*",
+    "https://localhost/*"
   ],
   "background": {
-    "service_worker": "background.js",
-    "type": "module"
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
+      "matches": [
+        "http://localhost:*/*",
+        "https://localhost:*/*"
+      ],
       "js": ["content.js"],
-      "run_at": "document_start"
+      "run_at": "document_end",
+      "all_frames": false
     }
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "FocusBoost"
-  },
-  "icons": {
-    "32": "icons/icon32.png"
+    "default_title": "FocusBoost Debug"
   },
   "web_accessible_resources": [
     {
-      "resources": ["dashboard.html"],
-      "matches": ["<all_urls>"]
+      "resources": ["*"],
+      "matches": ["http://localhost/*", "https://localhost/*"]
     }
   ]
 }

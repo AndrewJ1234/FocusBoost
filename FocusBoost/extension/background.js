@@ -1,34 +1,109 @@
-// Background service worker for FocusBoost extension
+console.log("🎯 FocusBoost - Full Tracking Version Starting...");
+
 class TabTracker {
   constructor() {
-    this.currentTab = null;
+    this.currentSession = null;
     this.sessionStartTime = Date.now();
     this.isTracking = true;
     this.tabSessions = new Map();
+    this.dailyStats = new Map();
     this.categoryRules = this.initializeCategoryRules();
-    
+
     this.init();
   }
 
   init() {
-    // Load saved data
-    this.loadData();
-    
-    // Set up event listeners
+    this.loadStoredData();
+    this.setupEventListeners();
+    this.getCurrentActiveTab();
+    this.startPeriodicSave();
+    console.log("✅ Tab tracking initialized");
+  }
+
+  initializeCategoryRules() {
+    return {
+      productive: [
+        "github.com",
+        "stackoverflow.com",
+        "codepen.io",
+        "jsfiddle.net",
+        "docs.google.com",
+        "notion.so",
+        "trello.com",
+        "asana.com",
+        "figma.com",
+        "vscode.dev",
+        "replit.com",
+      ],
+      entertainment: [
+        "youtube.com",
+        "netflix.com",
+        "twitch.tv",
+        "spotify.com",
+        "tiktok.com",
+        "instagram.com",
+        "reddit.com",
+      ],
+      educational: [
+        "coursera.org",
+        "udemy.com",
+        "khanacademy.org",
+        "wikipedia.org",
+        "w3schools.com",
+        "mdn.mozilla.org",
+        "freecodecamp.org",
+        "codecademy.com",
+      ],
+      work: [
+        "slack.com",
+        "zoom.us",
+        "teams.microsoft.com",
+        "office.com",
+        "salesforce.com",
+        "jira.atlassian.com",
+        "gmail.com",
+      ],
+      social: [
+        "facebook.com",
+        "twitter.com",
+        "x.com",
+        "linkedin.com",
+        "discord.com",
+        "whatsapp.com",
+        "telegram.org",
+      ],
+      news: [
+        "news.google.com",
+        "cnn.com",
+        "bbc.com",
+        "techcrunch.com",
+        "theverge.com",
+        "medium.com",
+        "hackernews",
+      ],
+      shopping: ["amazon.com", "ebay.com", "etsy.com", "shopify.com"],
+    };
+  }
+
+  setupEventListeners() {
+    // Tab switch detection
     chrome.tabs.onActivated.addListener((activeInfo) => {
       this.handleTabSwitch(activeInfo.tabId);
     });
 
+    // Page navigation detection
     chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-      if (changeInfo.status === 'complete' && tab.active) {
+      if (changeInfo.status === "complete" && tab.active) {
         this.handleTabSwitch(tabId);
       }
     });
 
+    // Tab close detection
     chrome.tabs.onRemoved.addListener((tabId) => {
       this.handleTabClose(tabId);
     });
 
+    // Window focus detection
     chrome.windows.onFocusChanged.addListener((windowId) => {
       if (windowId === chrome.windows.WINDOW_ID_NONE) {
         this.handleWindowBlur();
@@ -37,77 +112,7 @@ class TabTracker {
       }
     });
 
-    // Periodic data save
-    setInterval(() => {
-      this.saveData();
-    }, 30000); // Save every 30 seconds
-
-    // Get initial active tab
-    this.getCurrentActiveTab();
-  }
-
-  initializeCategoryRules() {
-    return {
-      productive: [
-        'docs.google.com', 'github.com', 'stackoverflow.com', 'codepen.io',
-        'jsfiddle.net', 'codesandbox.io', 'notion.so', 'obsidian.md',
-        'trello.com', 'asana.com', 'slack.com', 'zoom.us', 'teams.microsoft.com',
-        'office.com', 'figma.com', 'canva.com', 'adobe.com', 'vscode.dev'
-      ],
-      entertainment: [
-        'youtube.com', 'netflix.com', 'twitch.tv', 'spotify.com',
-        'soundcloud.com', 'hulu.com', 'disneyplus.com', 'primevideo.com',
-        'tiktok.com', 'instagram.com', 'snapchat.com'
-      ],
-      social: [
-        'facebook.com', 'twitter.com', 'x.com', 'linkedin.com', 'reddit.com',
-        'discord.com', 'telegram.org', 'whatsapp.com', 'messenger.com'
-      ],
-      educational: [
-        'coursera.org', 'udemy.com', 'khanacademy.org', 'edx.org',
-        'wikipedia.org', 'w3schools.com', 'mdn.mozilla.org', 'freecodecamp.org',
-        'codecademy.com', 'pluralsight.com', 'lynda.com'
-      ],
-      news: [
-        'news.google.com', 'cnn.com', 'bbc.com', 'reuters.com',
-        'techcrunch.com', 'theverge.com', 'ycombinator.com', 'medium.com',
-        'hackernews', 'news.ycombinator.com'
-      ],
-      shopping: [
-        'amazon.com', 'ebay.com', 'etsy.com', 'shopify.com',
-        'walmart.com', 'target.com', 'alibaba.com', 'bestbuy.com'
-      ],
-      work: [
-        'office.com', 'google.com/drive', 'dropbox.com', 'onedrive.com',
-        'salesforce.com', 'hubspot.com', 'mailchimp.com', 'jira.atlassian.com'
-      ]
-    };
-  }
-
-  categorizeUrl(url, title = '') {
-    const urlLower = url.toLowerCase();
-    const titleLower = title.toLowerCase();
-    
-    for (const [category, domains] of Object.entries(this.categoryRules)) {
-      for (const domain of domains) {
-        if (urlLower.includes(domain) || titleLower.includes(domain)) {
-          return category;
-        }
-      }
-    }
-    
-    return 'other';
-  }
-
-  async getCurrentActiveTab() {
-    try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab) {
-        this.handleTabSwitch(tab.id);
-      }
-    } catch (error) {
-      console.error('Error getting active tab:', error);
-    }
+    console.log("🎧 Event listeners registered");
   }
 
   async handleTabSwitch(tabId) {
@@ -115,143 +120,235 @@ class TabTracker {
 
     try {
       // End current session
-      if (this.currentTab) {
-        this.endCurrentSession();
-      }
+      this.endCurrentSession();
 
       // Get new tab info
       const tab = await chrome.tabs.get(tabId);
-      if (!tab.url || tab.url.startsWith('chrome://') || tab.url.startsWith('chrome-extension://')) {
+
+      if (!this.isValidTab(tab)) {
+        console.log("⏭️ Skipping invalid tab:", tab.url);
         return;
       }
 
       // Start new session
       this.startNewSession(tab);
+      console.log("🔄 Tab switch:", tab.title);
     } catch (error) {
-      console.error('Error handling tab switch:', error);
+      console.error("❌ Tab switch error:", error);
+    }
+  }
+
+  isValidTab(tab) {
+    if (!tab.url) return false;
+    if (tab.url.startsWith("chrome://")) return false;
+    if (tab.url.startsWith("chrome-extension://")) return false;
+    if (tab.url.startsWith("moz-extension://")) return false;
+    if (tab.url === "about:blank") return false;
+    return true;
+  }
+
+  startNewSession(tab) {
+    const category = this.categorizeUrl(tab.url, tab.title);
+    const domain = this.extractDomain(tab.url);
+
+    this.currentSession = {
+      id: tab.id,
+      url: tab.url,
+      domain,
+      title: tab.title,
+      category,
+      startTime: Date.now(),
+      isActive: true,
+    };
+
+    // Notify dashboard of real-time change
+    this.notifyDashboard("tabSwitch", this.currentSession);
+  }
+
+  endCurrentSession() {
+    if (!this.currentSession) return;
+
+    const sessionTime = Date.now() - this.currentSession.startTime;
+    if (sessionTime < 1000) return; // Ignore very short sessions
+
+    const sessionData = {
+      ...this.currentSession,
+      timeSpent: sessionTime,
+      endTime: Date.now(),
+    };
+
+    this.recordSessionData(sessionData);
+    this.updateDailyStats(sessionData);
+
+    console.log(
+      `⏰ Session ended: ${this.currentSession.domain} (${this.formatTime(
+        sessionTime
+      )})`
+    );
+  }
+
+  recordSessionData(sessionData) {
+    const key = sessionData.domain;
+    const existing = this.tabSessions.get(key) || {
+      domain: key,
+      title: sessionData.title,
+      category: sessionData.category,
+      totalTime: 0,
+      visits: 0,
+      lastVisit: 0,
+    };
+
+    existing.totalTime += sessionData.timeSpent;
+    existing.visits += 1;
+    existing.lastVisit = sessionData.endTime;
+    existing.title = sessionData.title; // Update to latest title
+
+    this.tabSessions.set(key, existing);
+  }
+
+  updateDailyStats(sessionData) {
+    const today = this.getTodayKey();
+    const stats = this.dailyStats.get(today) || {
+      date: today,
+      totalTime: 0,
+      productiveTime: 0,
+      categories: {},
+      sessionCount: 0,
+    };
+
+    stats.totalTime += sessionData.timeSpent;
+    stats.sessionCount += 1;
+
+    if (this.isProductiveCategory(sessionData.category)) {
+      stats.productiveTime += sessionData.timeSpent;
+    }
+
+    stats.categories[sessionData.category] =
+      (stats.categories[sessionData.category] || 0) + sessionData.timeSpent;
+
+    this.dailyStats.set(today, stats);
+  }
+
+  categorizeUrl(url, title = "") {
+    const urlLower = url.toLowerCase();
+    const titleLower = title.toLowerCase();
+
+    for (const [category, domains] of Object.entries(this.categoryRules)) {
+      if (
+        domains.some(
+          (domain) => urlLower.includes(domain) || titleLower.includes(domain)
+        )
+      ) {
+        return category;
+      }
+    }
+
+    return "other";
+  }
+
+  isProductiveCategory(category) {
+    return ["productive", "work", "educational"].includes(category);
+  }
+
+  extractDomain(url) {
+    try {
+      return new URL(url).hostname;
+    } catch {
+      return url;
+    }
+  }
+
+  getTodayKey() {
+    return new Date().toISOString().split("T")[0];
+  }
+
+  formatTime(ms) {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+
+    if (hours > 0) {
+      return `${hours}h ${minutes % 60}m`;
+    } else if (minutes > 0) {
+      return `${minutes}m`;
+    } else {
+      return `${seconds}s`;
+    }
+  }
+
+  async getCurrentActiveTab() {
+    try {
+      const [tab] = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+      if (tab && this.isValidTab(tab)) {
+        this.handleTabSwitch(tab.id);
+      }
+    } catch (error) {
+      console.error("❌ Error getting active tab:", error);
     }
   }
 
   handleTabClose(tabId) {
-    if (this.currentTab && this.currentTab.id === tabId) {
+    if (this.currentSession && this.currentSession.id === tabId) {
       this.endCurrentSession();
-      this.currentTab = null;
+      this.currentSession = null;
     }
   }
 
   handleWindowBlur() {
-    if (this.currentTab) {
-      this.currentTab.isActive = false;
+    if (this.currentSession) {
+      this.currentSession.isActive = false;
     }
   }
 
   async handleWindowFocus(windowId) {
     try {
-      const [tab] = await chrome.tabs.query({ active: true, windowId: windowId });
-      if (tab) {
+      const [tab] = await chrome.tabs.query({ active: true, windowId });
+      if (tab && this.isValidTab(tab)) {
         this.handleTabSwitch(tab.id);
       }
     } catch (error) {
-      console.error('Error handling window focus:', error);
+      console.error("❌ Window focus error:", error);
     }
   }
 
-  startNewSession(tab) {
-    const category = this.categorizeUrl(tab.url, tab.title);
-    const favicon = tab.favIconUrl || this.getFaviconUrl(tab.url);
-
-    this.currentTab = {
-      id: tab.id,
-      url: tab.url,
-      title: tab.title,
-      category,
-      favicon,
-      startTime: Date.now(),
-      isActive: true
-    };
-
-    // Add to recent activity
-    this.addToRecentActivity({
-      ...this.currentTab,
-      action: 'switched',
-      timestamp: new Date().toISOString()
-    });
-
-    // Notify dashboard
-    this.notifyDashboard('tabSwitch', this.currentTab);
+  startPeriodicSave() {
+    setInterval(() => {
+      this.saveData();
+      this.notifyDashboard("statsUpdate", this.getComprehensiveStats());
+    }, 10000); // Save and update every 10 seconds
   }
 
-  endCurrentSession() {
-    if (!this.currentTab) return;
-
-    const sessionTime = Date.now() - this.currentTab.startTime;
-    const key = this.currentTab.url;
-
-    // Get existing data or create new
-    let tabData = this.tabSessions.get(key) || {
-      url: this.currentTab.url,
-      title: this.currentTab.title,
-      category: this.currentTab.category,
-      favicon: this.currentTab.favicon,
-      timeSpent: 0,
-      visits: 0,
-      lastVisit: 0
-    };
-
-    // Update data
-    tabData.timeSpent += sessionTime;
-    tabData.visits += 1;
-    tabData.lastVisit = Date.now();
-    tabData.title = this.currentTab.title; // Update title in case it changed
-
-    this.tabSessions.set(key, tabData);
-    this.saveData();
-  }
-
-  addToRecentActivity(activity) {
-    chrome.storage.local.get(['recentActivity'], (result) => {
-      let recentActivity = result.recentActivity || [];
-      recentActivity.unshift(activity);
-      
-      // Keep only last 50 activities
-      if (recentActivity.length > 50) {
-        recentActivity = recentActivity.slice(0, 50);
-      }
-      
-      chrome.storage.local.set({ recentActivity });
-    });
-  }
-
-  getFaviconUrl(url) {
-    try {
-      const domain = new URL(url).hostname;
-      return `https://www.google.com/s2/favicons?sz=32&domain=${domain}`;
-    } catch {
-      return '';
-    }
-  }
-
-  async loadData() {
+  async loadStoredData() {
     try {
       const result = await chrome.storage.local.get([
-        'tabSessions', 
-        'sessionStartTime', 
-        'isTracking'
+        "tabSessions",
+        "dailyStats",
+        "sessionStartTime",
+        "isTracking",
       ]);
-      
+
       if (result.tabSessions) {
         this.tabSessions = new Map(Object.entries(result.tabSessions));
       }
-      
+
+      if (result.dailyStats) {
+        this.dailyStats = new Map(Object.entries(result.dailyStats));
+      }
+
       if (result.sessionStartTime) {
         this.sessionStartTime = result.sessionStartTime;
       }
-      
+
       if (result.isTracking !== undefined) {
         this.isTracking = result.isTracking;
       }
+
+      console.log("💾 Data loaded from storage");
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error("❌ Error loading data:", error);
     }
   }
 
@@ -259,139 +356,158 @@ class TabTracker {
     try {
       const data = {
         tabSessions: Object.fromEntries(this.tabSessions),
+        dailyStats: Object.fromEntries(this.dailyStats),
         sessionStartTime: this.sessionStartTime,
         isTracking: this.isTracking,
-        lastSaved: Date.now()
+        lastSaved: Date.now(),
       };
-      
+
       await chrome.storage.local.set(data);
     } catch (error) {
-      console.error('Error saving data:', error);
+      console.error("❌ Error saving data:", error);
     }
   }
 
   notifyDashboard(type, data) {
-    // Send message to dashboard if it's open
+    // Send to all localhost tabs
     chrome.tabs.query({}, (tabs) => {
-      tabs.forEach(tab => {
-        if (tab.url && tab.url.includes('localhost') && tab.url.includes('5173')) {
-          chrome.tabs.sendMessage(tab.id, {
-            type: 'FOCUSBOOST_UPDATE',
-            payload: { type, data }
-          }).catch(() => {
-            // Dashboard tab might not be ready, ignore error
-          });
+      tabs.forEach((tab) => {
+        if (tab.url && tab.url.includes("localhost")) {
+          chrome.tabs
+            .sendMessage(tab.id, {
+              type: "FOCUSBOOST_UPDATE",
+              payload: { type, data },
+            })
+            .catch(() => {
+              // Dashboard might not be ready, ignore
+            });
         }
       });
     });
   }
 
-  // API methods for popup and dashboard
-  async getStats() {
-    const tabs = Array.from(this.tabSessions.values());
-    const categoryStats = {};
-    let productiveTime = 0;
-    let entertainmentTime = 0;
-    let totalTime = 0;
+  getComprehensiveStats() {
+    const today = this.getTodayKey();
+    const todayStats = this.dailyStats.get(today) || {
+      totalTime: 0,
+      productiveTime: 0,
+      categories: {},
+      sessionCount: 0,
+    };
 
-    tabs.forEach(tab => {
-      totalTime += tab.timeSpent;
-      
-      if (!categoryStats[tab.category]) {
-        categoryStats[tab.category] = 0;
-      }
-      categoryStats[tab.category] += tab.timeSpent;
+    const topSites = Array.from(this.tabSessions.values())
+      .sort((a, b) => b.totalTime - a.totalTime)
+      .slice(0, 10);
 
-      if (['productive', 'work', 'educational'].includes(tab.category)) {
-        productiveTime += tab.timeSpent;
-      } else if (['entertainment', 'social'].includes(tab.category)) {
-        entertainmentTime += tab.timeSpent;
-      }
-    });
-
-    const productivityScore = totalTime > 0 ? Math.round((productiveTime / totalTime) * 100) : 0;
+    const productivityScore =
+      todayStats.totalTime > 0
+        ? Math.round((todayStats.productiveTime / todayStats.totalTime) * 100)
+        : 0;
 
     return {
-      currentTab: this.currentTab,
-      topTabs: tabs.sort((a, b) => b.timeSpent - a.timeSpent).slice(0, 10),
-      categoryStats,
+      currentSession: this.currentSession,
+      topSites,
+      categoryStats: todayStats.categories,
       productivityStats: {
-        productiveTime,
-        entertainmentTime,
-        totalTime,
-        productivityScore
+        productiveTime: todayStats.productiveTime,
+        entertainmentTime:
+          (todayStats.categories.entertainment || 0) +
+          (todayStats.categories.social || 0),
+        totalTime: todayStats.totalTime,
+        productivityScore,
+        sessionCount: todayStats.sessionCount,
       },
       sessionTime: Math.floor((Date.now() - this.sessionStartTime) / 1000),
-      isTracking: this.isTracking
+      isTracking: this.isTracking,
+      weeklyTrend: this.getWeeklyTrend(),
     };
+  }
+
+  getWeeklyTrend() {
+    const weekData = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const key = date.toISOString().split("T")[0];
+      const dayStats = this.dailyStats.get(key);
+
+      weekData.push({
+        date: key,
+        productiveTime: dayStats?.productiveTime || 0,
+        totalTime: dayStats?.totalTime || 0,
+        score:
+          dayStats?.totalTime > 0
+            ? Math.round((dayStats.productiveTime / dayStats.totalTime) * 100)
+            : 0,
+      });
+    }
+    return weekData;
   }
 
   startTracking() {
     this.isTracking = true;
     this.saveData();
     this.getCurrentActiveTab();
+    console.log("▶️ Tracking started");
   }
 
   pauseTracking() {
     this.isTracking = false;
-    if (this.currentTab) {
-      this.endCurrentSession();
-      this.currentTab = null;
-    }
+    this.endCurrentSession();
+    this.currentSession = null;
     this.saveData();
+    console.log("⏸️ Tracking paused");
   }
 
   resetData() {
     this.tabSessions.clear();
-    this.currentTab = null;
+    this.dailyStats.clear();
+    this.currentSession = null;
     this.sessionStartTime = Date.now();
     chrome.storage.local.clear();
-  }
-
-  async exportData() {
-    const stats = await this.getStats();
-    const result = await chrome.storage.local.get(['recentActivity']);
-    
-    const exportData = {
-      ...stats,
-      recentActivity: result.recentActivity || [],
-      exportedAt: new Date().toISOString()
-    };
-
-    return exportData;
+    console.log("🗑️ Data reset");
   }
 }
 
 // Initialize tracker
 const tracker = new TabTracker();
 
-// Message handler for popup and content scripts
+// Enhanced message handler
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  switch (request.action) {
-    case 'getStats':
-      tracker.getStats().then(sendResponse);
-      return true;
-    
-    case 'startTracking':
-      tracker.startTracking();
-      sendResponse({ success: true });
-      break;
-    
-    case 'pauseTracking':
-      tracker.pauseTracking();
-      sendResponse({ success: true });
-      break;
-    
-    case 'resetData':
-      tracker.resetData();
-      sendResponse({ success: true });
-      break;
-    
-    case 'exportData':
-      tracker.exportData().then(sendResponse);
-      return true;
-    
-    default:
-      sendResponse({ error: 'Unknown action' });
+  console.log("📨 Background received:", request.action);
+
+  try {
+    switch (request.action) {
+      case "getStats":
+        const stats = tracker.getComprehensiveStats();
+        console.log("📊 Sending real stats");
+        sendResponse(stats);
+        break;
+
+      case "startTracking":
+        tracker.startTracking();
+        sendResponse({ success: true });
+        break;
+
+      case "pauseTracking":
+        tracker.pauseTracking();
+        sendResponse({ success: true });
+        break;
+
+      case "resetData":
+        tracker.resetData();
+        sendResponse({ success: true });
+        break;
+
+      default:
+        sendResponse({ error: "Unknown action: " + request.action });
+    }
+  } catch (error) {
+    console.error("❌ Message handler error:", error);
+    sendResponse({ error: error.message });
   }
+
+  return true;
 });
+
+console.log("🚀 FocusBoost ready - Real tab tracking active!");
