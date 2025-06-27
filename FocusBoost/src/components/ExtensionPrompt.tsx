@@ -3,7 +3,6 @@ import { Download, Chrome, AlertCircle } from 'lucide-react';
 
 export const ExtensionPrompt: React.FC = () => {
   const handleInstallExtension = () => {
-    // Create a downloadable zip file with extension files
     const extensionFiles = {
       'manifest.json': JSON.stringify({
         "manifest_version": 3,
@@ -34,7 +33,6 @@ export const ExtensionPrompt: React.FC = () => {
       }, null, 2)
     };
 
-    // For now, just show installation instructions
     alert('Extension files are ready! Please check the /extension folder in your project and follow the installation instructions below.');
   };
 
