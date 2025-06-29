@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FocusBoost</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 320px;
+      height: 480px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      overflow: hidden;
+    }
+    
+    .header {
+      padding: 20px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      background: #10b981;
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    
+    .content {
+      padding: 20px;
+    }
+    
+    .current-session {
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .session-title {
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+    
+    .session-details {
+      font-size: 14px;
+      opacity: 0.9;
+      line-height: 1.4;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card {
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .stat-value {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .btn {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(10px);
+    }
+    
+    .btn:hover {
+      background: rgba(255,255,255,0.3);
+      transform: translateY(-1px);
+    }
+    
+    .btn-primary {
+      background: rgba(16, 185, 129, 0.8);
+      border-color: rgba(16, 185, 129, 1);
+    }
+    
+    .btn-primary:hover {
+      background: rgba(16, 185, 129, 1);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">🎯 FocusBoost</div>
+    <div class="status">
+      <div class="status-dot"></div>
+      <span id="tracking-status">Live Tracking Active</span>
+    </div>
+  </div>
+  
+  <div class="content">
+    <div class="current-session">
+      <div class="session-title" id="current-activity">VS Code - React Development</div>
+      <div class="session-details">
+        <div id="session-duration">2h 34m 12s</div>
+        <div id="session-category">Development • 85% Focus</div>
+      </div>
+    </div>
+    
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="daily-score">87%</div>
+        <div class="stat-label">Today's Score</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="global-rank">#247</div>
+        <div class="stat-label">Global Rank</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="focus-time">6.2h</div>
+        <div class="stat-label">Focus Time</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="streak">18</div>
+        <div class="stat-label">Day Streak</div>
+      </div>
+    </div>
+    
+    <div class="actions">
+      <button class="btn btn-primary" id="open-dashboard">
+        Open Dashboard
+      </button>
+      <button class="btn" id="toggle-tracking">
+        Pause Tracking
+      </button>
+      <button class="btn" id="take-break">
+        Take Break
+      </button>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
